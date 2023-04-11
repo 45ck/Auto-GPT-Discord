@@ -3,7 +3,6 @@ import os
 
 
 def execute_python_file(file):
-    """Execute a Python file in a Docker container and return the output"""
     workspace_folder = "auto_gpt_workspace"
 
     print (f"Executing file '{file}' in workspace '{workspace_folder}'")
@@ -40,7 +39,7 @@ def execute_python_file(file):
         container.remove()
 
         # print(f"Execution complete. Output: {output}")
-        # print(f"Logs: {logs}")
+        # print(f"Logs: {logs}") 
 
         return logs
 

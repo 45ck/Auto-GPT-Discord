@@ -4,13 +4,11 @@ import os.path
 # Set a dedicated folder for file I/O
 working_directory = "auto_gpt_workspace"
 
-# Create the directory if it doesn't exist
 if not os.path.exists(working_directory):
     os.makedirs(working_directory)
 
 
 def safe_join(base, *paths):
-    """Join one or more path components intelligently."""
     new_path = os.path.join(base, *paths)
     norm_new_path = os.path.normpath(new_path)
 
@@ -21,10 +19,9 @@ def safe_join(base, *paths):
 
 
 def read_file(filename):
-    """Read a file and return the contents"""
     try:
         filepath = safe_join(working_directory, filename)
-        with open(filepath, "r", encoding='utf-8') as f:
+        with open(filepath, "r") as f:
             content = f.read()
         return content
     except Exception as e:
@@ -32,7 +29,6 @@ def read_file(filename):
 
 
 def write_to_file(filename, text):
-    """Write text to a file"""
     try:
         filepath = safe_join(working_directory, filename)
         directory = os.path.dirname(filepath)
@@ -46,7 +42,6 @@ def write_to_file(filename, text):
 
 
 def append_to_file(filename, text):
-    """Append text to a file"""
     try:
         filepath = safe_join(working_directory, filename)
         with open(filepath, "a") as f:
@@ -57,7 +52,6 @@ def append_to_file(filename, text):
 
 
 def delete_file(filename):
-    """Delete a file"""
     try:
         filepath = safe_join(working_directory, filename)
         os.remove(filepath)

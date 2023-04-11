@@ -13,6 +13,9 @@ from image_gen import generate_image
 from duckduckgo_search import ddg
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from discord_communicator import send_discord_action, get_discord_action
+import traceback
+import sys
 
 cfg = Config()
 
@@ -24,13 +27,13 @@ def is_valid_int(value):
     except ValueError:
         return False
 
+
 def get_command(response):
-    """Parse the response and return the command name and arguments"""
     try:
         response_json = fix_and_parse_json(response)
 
         if "command" not in response_json:
-            return "Error:" , "Missing 'command' object in JSON"
+            return "Error:", "Missing 'command' object in JSON"
 
         command = response_json["command"]
 
@@ -42,6 +45,9 @@ def get_command(response):
         # Use an empty dictionary if 'args' field is not present in 'command' object
         arguments = command.get("args", {})
 
+        if not arguments:
+            arguments = {}
+
         return command_name, arguments
     except json.decoder.JSONDecodeError:
         return "Error:", "Invalid JSON"
@@ -50,8 +56,7 @@ def get_command(response):
         return "Error:", str(e)
 
 
-def execute_command(command_name, arguments):
-    """Execute the command and return the result"""
+async def execute_command(command_name, arguments):
     memory = get_memory(cfg)
 
     try:
@@ -105,33 +110,67 @@ def execute_command(command_name, arguments):
             return execute_python_file(arguments["file"])
         elif command_name == "generate_image":
             return generate_image(arguments["prompt"])
-        elif command_name == "do_nothing":
-            return "No action performed."
+        elif command_name == "message_channel":
+            return send_discord_action(["message_channel", arguments["channel_name"], arguments["message"]])
+        elif command_name == "send_discord_message":
+            return await get_discord_action(["message", arguments["message"]])
+        elif command_name == "create_channel":
+            return await get_discord_action(["create_channel", arguments["channel_name"], arguments.get("category_name")])
+        elif command_name == "rename_channel":
+            return await get_discord_action(["rename_channel", arguments["channel_name"], arguments["new_name"]])
+        elif command_name == "delete_channel":
+            return await get_discord_action(["delete_channel", arguments["channel_name"]])
+        elif command_name == "message_channel":
+            return await get_discord_action(["message_channel", arguments["channel_name"], arguments["message"]])
+        elif command_name == "send_embed":
+            return await get_discord_action(["send_embed", arguments["channel_name"], arguments["title"], arguments["description"]])
+        elif command_name == "list_channels":
+            return await get_discord_action(["list_channels"])
+        elif command_name == "get_message_history":
+            return await get_discord_action(["get_message_history", arguments["channel_name"], arguments["limit_number"]])
+        elif command_name == "create_role":
+            return await get_discord_action(["create_role", arguments["roles"]])
+        elif command_name == "read_role":
+            return await get_discord_action(["read_role", arguments["role_name"]])
+        elif command_name == "update_role":
+            return await get_discord_action(["update_role", arguments["role_name"], arguments["new_name"]])
+        elif command_name == "delete_role":
+            return await get_discord_action(["delete_role", arguments["roles"]])
+        elif command_name == "change_role_permission":
+            return await get_discord_action(["change_role_permission", arguments["role_name"], arguments["permission"]])
+        elif command_name == "revoke_role_permission":
+            return await get_discord_action(["revoke_role_permission", arguments["role_name"], arguments["permission"]])
+        elif command_name == "check_permission":
+            return await get_discord_action(["check_permission", arguments["role_name"], arguments["permission"]])
+        elif command_name =="list_all_roles":
+            return await get_discord_action(["list_all_roles"])
         elif command_name == "task_complete":
             shutdown()
         else:
             return f"Unknown command '{command_name}'. Please refer to the 'COMMANDS' list for availabe commands and only respond in the specified JSON format."
     # All errors, return "Error: + error message"
     except Exception as e:
-        return "Error: " + str(e)
+        error_msg = str(e)
+        error_type, error_value, error_traceback = sys.exc_info()
+        traceback_msg = traceback.format_exception(
+            error_type, error_value, error_traceback)
+        return "Error: " + error_type + " | " + error_msg + " | " + traceback_msg
 
 
 def get_datetime():
-    """Return the current date and time"""
     return "Current date and time: " + \
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def google_search(query, num_results=8):
-    """Return the results of a google search"""
     search_results = []
     for j in ddg(query, max_results=num_results):
         search_results.append(j)
 
     return json.dumps(search_results, ensure_ascii=False, indent=4)
 
+
 def google_official_search(query, num_results=8):
-    """Return the results of a google search using the official Google API"""
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
     import json
@@ -145,7 +184,8 @@ def google_official_search(query, num_results=8):
         service = build("customsearch", "v1", developerKey=api_key)
 
         # Send the search query and retrieve the results
-        result = service.cse().list(q=query, cx=custom_search_engine_id, num=num_results).execute()
+        result = service.cse().list(q=query, cx=custom_search_engine_id,
+                                    num=num_results).execute()
 
         # Extract the search result items from the response
         search_results = result.get("items", [])
@@ -166,8 +206,8 @@ def google_official_search(query, num_results=8):
     # Return the list of search result URLs
     return search_results_links
 
+
 def browse_website(url, question):
-    """Browse a website and return the summary and links"""
     summary = get_text_summary(url, question)
     links = get_hyperlinks(url)
 
@@ -181,27 +221,23 @@ def browse_website(url, question):
 
 
 def get_text_summary(url, question):
-    """Return the results of a google search"""
     text = browse.scrape_text(url)
     summary = browse.summarize_text(text, question)
     return """ "Result" : """ + summary
 
 
 def get_hyperlinks(url):
-    """Return the results of a google search"""
     link_list = browse.scrape_links(url)
     return link_list
 
 
 def commit_memory(string):
-    """Commit a string to memory"""
     _text = f"""Committing memory with string "{string}" """
     mem.permanent_memory.append(string)
     return _text
 
 
 def delete_memory(key):
-    """Delete a memory with a given key"""
     if key >= 0 and key < len(mem.permanent_memory):
         _text = "Deleting memory with key " + str(key)
         del mem.permanent_memory[key]
@@ -213,13 +249,13 @@ def delete_memory(key):
 
 
 def overwrite_memory(key, string):
-    """Overwrite a memory with a given key and string"""
     # Check if the key is a valid integer
     if is_valid_int(key):
         key_int = int(key)
         # Check if the integer key is within the range of the permanent_memory list
         if 0 <= key_int < len(mem.permanent_memory):
-            _text = "Overwriting memory with key " + str(key) + " and string " + string
+            _text = "Overwriting memory with key " + \
+                str(key) + " and string " + string
             # Overwrite the memory slot with the given integer key and string
             mem.permanent_memory[key_int] = string
             print(_text)
@@ -240,13 +276,11 @@ def overwrite_memory(key, string):
 
 
 def shutdown():
-    """Shut down the program"""
     print("Shutting down...")
     quit()
 
 
 def start_agent(name, task, prompt, model=cfg.fast_llm_model):
-    """Start an agent with a given name, task, and prompt"""
     global cfg
 
     # Remove underscores from name
@@ -270,7 +304,6 @@ def start_agent(name, task, prompt, model=cfg.fast_llm_model):
 
 
 def message_agent(key, message):
-    """Message an agent with a given key and message"""
     global cfg
 
     # Check if the key is a valid integer
@@ -289,12 +322,10 @@ def message_agent(key, message):
 
 
 def list_agents():
-    """List all agents"""
     return agents.list_agents()
 
 
 def delete_agent(key):
-    """Delete an agent with a given key"""
     result = agents.delete_agent(key)
     if not result:
         return f"Agent {key} does not exist."
