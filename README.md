@@ -33,6 +33,7 @@ Your support is greatly appreciated
     - [Demo (30/03/2023):](#demo-30032023)
   - [💖 Help Fund Auto-GPT's Development](#-help-fund-auto-gpts-development)
   - [Table of Contents](#table-of-contents)
+  - [Running Auto-GPT-Discord](#running-auto-gpt-discord)
   - [🚀 Features](#-features)
   - [📋 Requirements](#-requirements)
   - [💾 Installation](#-installation)
@@ -46,6 +47,31 @@ Your support is greatly appreciated
   - [⚠️ Limitations](#️-limitations)
   - [🛡 Disclaimer](#-disclaimer)
   - [🐦 Connect with Us on Twitter](#-connect-with-us-on-twitter)
+
+## Running Auto-GPT-Discord
+
+To start the Python Auto GPT Discord program, you need to run both Python scripts at the same time (discord_bot.py and main.py). This can be done using PowerShell script files (.ps1). Here's an example PowerShell script that starts both Python scripts:
+
+```powershell
+# Prompt user to run script as administrator
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+
+if (-not $isAdmin) {
+    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    exit
+}
+
+# Get the directory containing the currently executing script file
+$scriptPath = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+
+# Start both Python scripts
+Start-Process -FilePath "python.exe" -ArgumentList "$scriptPath\discord_bot.py" 
+Start-Process -FilePath "python.exe" -ArgumentList "$scriptPath\main.py" 
+```
+
+To use this script, save it as a .ps1 file and then run it using PowerShell. The script prompts the user to run it as an administrator (since the Auto GPT Discord program requires administrator privileges), and then starts both Python scripts in separate processes.
+
+Note that you'll need to modify the paths to the Python scripts to match the locations where they are stored on your system.
 
 
 ## 🚀 Features
