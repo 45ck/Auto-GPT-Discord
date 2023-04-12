@@ -23,6 +23,52 @@ intents.members = True
 
 global s
 
+import json
+
+def get_categories_and_channels(guild):
+    channels = guild.channels
+    categories = {}
+    for channel in channels:
+        if channel.category:
+            category = channel.category.name
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(channel.name)
+        else:
+            if "Uncategorized" not in categories:
+                categories["Uncategorized"] = []
+            categories["Uncategorized"].append(channel.name)
+
+    result = []
+    for category, channels in categories.items():
+        category_dict = {}
+        category_dict["Category"] = category
+        category_dict["Channels"] = channels
+        result.append(category_dict)
+
+    return json.dumps(result)
+
+import json
+
+def get_all_roles(guild, user):
+    roles = []
+    for role in guild.roles[1:]:
+        if role < user.top_role and not role.managed:
+            roles.append(role)
+
+    role_list = []
+    for role in roles:
+        role_dict = {}
+        role_dict["Name"] = role.name
+        role_dict["Color"] = str(role.color)
+        role_dict["Permissions"] = int(role.permissions.value)
+        role_dict["Hoist"] = role.hoist
+        role_dict["Mentionable"] = role.mentionable
+        role_list.append(role_dict)
+
+    return json.dumps(role_list)
+
+
 async def echo_message_in_channel(message: str):
     channel = bot.get_channel(intended_channel_id)
     if channel:
@@ -54,14 +100,11 @@ def start_socket_server():
             message = discord.Message(content=cmd)
             await bot.process_commands(message)
         elif command == "list_channels":
-            # List all channels the bot is a member of
             try:
-                channels = bot.guilds[0].channels
-                channel_list = "\n".join([f"{c.name} " for c in channels])
-                response = f"Channels:\n{channel_list}"
+                categories_and_channels = get_categories_and_channels(bot.guilds[0])
+                response = f"Channels and categories in server:\n{categories_and_channels}"
                 conn.sendall(response.encode())
                 print("Send Response: " + response)
-
             except (socket.error, asyncio.TimeoutError) as e:
                 import traceback
                 tb = traceback.format_exc()
@@ -75,7 +118,7 @@ def start_socket_server():
                 channel = discord.utils.get(bot.guilds[0].channels, name=channel_name)
 
                 # Get the message history for the channel
-                messages = []
+                messages = [] 
                 async for message in channel.history(limit=min(int(params[1]), 10)):
                     messages.append(message)
 
@@ -123,9 +166,7 @@ def start_socket_server():
 
             response = f"Channel '{channel_name}' created."
 
-            channels = bot.guilds[0].channels
-            channel_list = "\n".join([f"{c.name} (ID: {c.id})" for c in channels])
-            response += f"Now the server Channels are:\n{channel_list}"
+            response += f"Now the server Channels are:\n{get_categories_and_channels(bot.guilds[0])}"
             conn.sendall(response.encode())
             print("Send Response: " + response)
 
@@ -152,10 +193,6 @@ def start_socket_server():
         elif command == "create_role":
             # Create a new role with the given name
             roles = []
-            print(roles)
-
-
-
             for role_params in params[0]:
                 role_name = role_params.get("role_name")
                 color = role_params.get("color", "default")
@@ -163,37 +200,22 @@ def start_socket_server():
                 hoist = role_params.get("hoist", False)
                 mentionable = role_params.get("mentionable", False)
 
-                print(f"Creating role: {role_name}, color: {color}, permissions: {permissions_str}, hoist: {hoist}, mentionable: {mentionable}")
-
                 # Convert color and permissions strings to their respective values
                 color_value = discord.Color.default() if color == "default" else discord.Color(int(color[1:], 16))
-                print("COLOR CONVERTED!")
-                print(permissions_str)
                 permissions_value = discord.Permissions()
                 for permission in permissions_str.split(','):
                     permission = permission.strip()
                     setattr(permissions_value, permission, True)
 
-
-                print("Creating role...")
-
                 guild = bot.guilds[0]
                 role = await guild.create_role(name=role_name, color=color_value, permissions=permissions_value, hoist=hoist, mentionable=mentionable)
-                # await echo_message_in_channel(f"Role '{role_name}' created with ID {role.id}.")
                 roles.append(role)
-
-                print("Role created.")
 
             # Get a list of all roles in the server
             guild = bot.guilds[0]
-            roles = guild.roles[1:]  # exclude @everyone role
-            role_names = [role.name for role in roles]
-
-            response = f"Roles created: {[role.name for role in roles]}\n"
-            response += f"Now the roles in server currently: {', '.join(role_names)}"
+            response = get_all_roles(guild)
 
             conn.sendall(response.encode())
-            print("Send Response: " + response)
 
             
         elif command == "list_all_roles":
@@ -304,6 +326,68 @@ def start_socket_server():
                 else:
                     print(f"Role '{role_name}' not found.")
                     result_message += (f"Role '{role_name}' not found.\n")
+            await conn.sendall(result_message.encode())
+        elif command == "create_new_discord_invite":
+            invite_channel = params[0]
+
+            # Create a new invite for the given channel
+            channel = discord.utils.get(bot.guilds[0].channels, name=invite_channel)
+            invite = await channel.create_invite()
+
+            # Send the invite URL back to the client
+            invite_code_url = invite.url
+            result_message = invite_code_url
+            await conn.sendall(result_message.encode())
+
+        elif command == "private_msg_users":
+            users = params[0] #array of user ids
+            message = params[1] 
+
+            # Send a private message to the specified users
+            for user_id in users:
+                user = await bot.fetch_user(int(user_id))
+                await user.send(message)
+
+            # Send a response indicating that the messages were sent successfully
+            result_message = "Private messages sent successfully"
+            await conn.sendall(result_message.encode())
+
+        elif command == "send_image_channel":
+            channel = params[0]
+            images = params[1] # array of urls to images
+
+            # Send the images to the specified channel
+            target_channel = discord.utils.get(bot.guilds[0].channels, name=channel)
+            for image_url in images:
+                await target_channel.send(file=discord.File(image_url))
+
+            # Send a response indicating that the images were sent successfully
+            result_message = "Images sent successfully"
+            await conn.sendall(result_message.encode())
+
+        elif command == "get_user_list":
+            # Get a list of all users in the Discord server (IDs and usernames)
+            guild = bot.guilds[0]
+            members = guild.members
+            user_list = "\n".join([f"{member.id}: {member.name}" for member in members])
+
+            # Send the user list back to the client
+            await conn.sendall(user_list.encode())
+
+        elif command == "set_channel_access":
+            channel = params[0]
+            roles = params[1] #list of roles who have access to the channel
+
+            # Set the channel to only be accessible by the specified roles
+            target_channel = discord.utils.get(bot.guilds[0].channels, name=channel)
+            overwrites = target_channel.overwrites
+            for role_name in roles:
+                role = discord.utils.get(target_channel.guild.roles, name=role_name)
+                overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            await target_channel.edit(overwrites=overwrites)
+
+            # Send a response indicating that the channel access was updated successfully
+            result_message = f"Access to channel '{channel}' updated successfully"
             await conn.sendall(result_message.encode())
 
 

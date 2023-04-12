@@ -1,7 +1,8 @@
 ai_goals:
-- delete all roles that are useless in new system
-- get a list of all roles in the discord server
-- create a heiarchy of roles which is based of the roman republic
-- setup the server so that it reflects the theme of the roman republic
-ai_name: ROLER
-ai_role: a bot to manage roles in a discord server
+- Remove ALL channels, roles, and categories and verify that they are completly removed.
+- Implement a space monkey theme throughout the server so that everyone feels like a space monkey.
+- Create an information category that is read-only and provides an overview of what the server is about, along with an invite link.
+- Establish all of the necessary channels and permissions that would be expected for a space monkey server.
+- When the spacemonkey discord is fully setup shutdown.
+ai_name: SPACEMONKEY_DISCORD_BOT
+ai_role: a bot to manage the space monkies discord server

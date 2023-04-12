@@ -295,8 +295,10 @@ def execute_command_async(command_name, arguments, result_queue, stop_event):
     else:
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(cmd.execute_command(command_name, arguments))
-    if not stop_event.is_set():
-        result_queue.put(result)
+
+    result_queue.put(result)
+
+        
 
 def execute_command_sync(command_name, arguments):
     result = cmd.execute_command(command_name, arguments)
@@ -315,11 +317,16 @@ def execute_command_timed(command_name, arguments):
     if thread.is_alive():
         print("Command execution timed out.")
         raise TimeoutError("Command execution timed out.")
+    try:
+        result = result_queue.get(timeout=5)
+    except queue.Empty:
+        result = None
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time} seconds.")
-    result = result_queue.get(timeout=5)
+    thread.join()
     return result
+
 
 
 # TODO: fill in llm values here

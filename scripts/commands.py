@@ -137,13 +137,23 @@ async def execute_command(command_name, arguments):
         elif command_name == "delete_role":
             return await get_discord_action(["delete_role", arguments["roles"]])
         elif command_name == "change_role_permission":
-            return await get_discord_action(["change_role_permission", arguments["role_name"], arguments["permission"]])
+            return await get_discord_action(["change_role_permission", arguments["role_names"], arguments["permissions"]])
         elif command_name == "revoke_role_permission":
-            return await get_discord_action(["revoke_role_permission", arguments["role_name"], arguments["permission"]])
+            return await get_discord_action(["revoke_role_permission", arguments["role_names"], arguments["permissions"]])
         elif command_name == "check_permission":
             return await get_discord_action(["check_permission", arguments["role_name"], arguments["permission"]])
         elif command_name =="list_all_roles":
             return await get_discord_action(["list_all_roles"])
+        elif command_name == "create_new_discord_invite":
+            return await get_discord_action(["create_new_discord_invite", arguments["invite_channel"]])
+        elif command_name == "private_msg_users":
+            return await get_discord_action(["private_msg_users", arguments["users"], arguments["message"]])
+        elif command_name == "send_image_channel":
+            return await get_discord_action(["send_image_channel", arguments["channel"], arguments["images"]])
+        elif command_name == "get_user_list":
+            return await get_discord_action(["get_user_list"])
+        elif command_name == "set_channel_access":
+            return await get_discord_action(["set_channel_access", arguments["channel"], arguments["roles"]])
         elif command_name == "task_complete":
             shutdown()
         else:
