@@ -115,11 +115,11 @@ async def execute_command(command_name, arguments):
         elif command_name == "send_discord_message":
             return await get_discord_action(["message", arguments["message"]])
         elif command_name == "create_channel":
-            return await get_discord_action(["create_channel", arguments["channel_name"], arguments.get("category_name")])
+            return await get_discord_action(["create_channel", arguments["channel_names"], arguments.get("category_name")])
         elif command_name == "rename_channel":
             return await get_discord_action(["rename_channel", arguments["channel_name"], arguments["new_name"]])
         elif command_name == "delete_channel":
-            return await get_discord_action(["delete_channel", arguments["channel_name"]])
+            return await get_discord_action(["delete_channel", arguments["channel_names"]])
         elif command_name == "message_channel":
             return await get_discord_action(["message_channel", arguments["channel_name"], arguments["message"]])
         elif command_name == "send_embed":

@@ -1,8 +1,7 @@
 ai_goals:
-- Remove ALL channels, roles, and categories and verify that they are completly removed.
-- Implement a space monkey theme throughout the server so that everyone feels like a space monkey.
-- Create an information category that is read-only and provides an overview of what the server is about, along with an invite link.
-- Establish all of the necessary channels and permissions that would be expected for a space monkey server.
-- When the spacemonkey discord is fully setup shutdown.
+- delete all channels
+- delete all roles
+- when all roles and channels are verified to be deleted create a channel called bob
+- shutdown when all roles and channels are verified to be deleted and channel called bob exsists
 ai_name: SPACEMONKEY_DISCORD_BOT
 ai_role: a bot to manage the space monkies discord server

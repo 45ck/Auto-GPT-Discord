@@ -102,7 +102,7 @@ def start_socket_server():
         elif command == "list_channels":
             try:
                 categories_and_channels = get_categories_and_channels(bot.guilds[0])
-                response = f"Channels and categories in server:\n{categories_and_channels}"
+                response = f"There are {len(bot.guilds[0].categories) + len(bot.guilds[0].roles)} roles in the server. Here is a list of each role: \n{categories_and_channels}"
                 conn.sendall(response.encode())
                 print("Send Response: " + response)
             except (socket.error, asyncio.TimeoutError) as e:
@@ -151,9 +151,9 @@ def start_socket_server():
             else:
                 await conn.sendall(f"Channel '{channel_name}' not found.")
         elif command == "create_channel":
-            # Create a new text channel
-            channel_name = params[0]
-            category_name = params[1] if len(params) > 1 else bot.guilds[0].name
+            # Create new text channels
+            channel_names = params[:-1]
+            category_name = params[-1] if len(params) > 1 else bot.guilds[0].name
 
             # Check if the category already exists
             category = discord.utils.get(bot.guilds[0].categories, name=category_name)
@@ -162,13 +162,33 @@ def start_socket_server():
             if not category:
                 category = await bot.guilds[0].create_category(category_name)
 
-            await bot.guilds[0].create_text_channel(channel_name, category=category)
+            for channel_name in channel_names:
+                await bot.guilds[0].create_text_channel(channel_name, category=category)
 
-            response = f"Channel '{channel_name}' created."
+            response = f"Channels '{', '.join(channel_names)}' created."
 
             response += f"Now the server Channels are:\n{get_categories_and_channels(bot.guilds[0])}"
             conn.sendall(response.encode())
             print("Send Response: " + response)
+
+        elif command == "delete_channel":
+            # Delete existing channels
+            channel_names = params[0]
+            deleted_channels = []
+            not_found_channels = []
+
+            for channel_name in channel_names:
+                channel = discord.utils.get(bot.guilds[0].channels, name=channel_name)
+                if channel:
+                    await channel.delete()
+                    deleted_channels.append(channel_name)
+                else:
+                    not_found_channels.append(channel_name)
+
+            if deleted_channels:
+                await conn.sendall((f"Channels '{', '.join(deleted_channels)}' deleted.").encode())
+            if not_found_channels:
+                await conn.sendall((f"Channels '{', '.join(not_found_channels)}' not found.").encode())
 
 
         elif command == "rename_channel":
@@ -179,15 +199,6 @@ def start_socket_server():
             if channel:
                 await channel.edit(name=new_name)
                 await conn.sendall((f"Channel '{channel_name}' renamed to '{new_name}'.").encode())
-            else:
-                await conn.sendall((f"Channel '{channel_name}' not found.").encode())
-        elif command == "delete_channel":
-            # Delete an existing channel
-            channel_name = params[0]
-            channel = discord.utils.get(bot.guilds[0].channels, name=channel_name)
-            if channel:
-                await channel.delete()
-                await conn.sendall((f"Channel '{channel_name}' deleted.").encode())
             else:
                 await conn.sendall((f"Channel '{channel_name}' not found.").encode())
         elif command == "create_role":

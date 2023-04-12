@@ -312,11 +312,11 @@ def execute_command_timed(command_name, arguments):
     thread.start()
     while thread.is_alive() and not stop_event.is_set():
         thread.join(timeout=3)
-        if time.time() - start_time >= 10:
+        if time.time() - start_time >= 25:
             stop_event.set()
     if thread.is_alive():
         print("Command execution timed out.")
-        raise TimeoutError("Command execution timed out.")
+        raise TimeoutError("Command execution timed out. ")
     try:
         result = result_queue.get(timeout=5)
     except queue.Empty:
@@ -435,7 +435,7 @@ while True:
                         print("Completed command!")
                     except TimeoutError:
                         print("Command execution timed out.")
-                        result = "Command execution timed out."
+                        result = f"The command {command_name} couldn't be executed due to most-likely an invalid argument."
                     except Exception as e:
                         print(f"An error occurred during command execution: {e}")
                         result = "An error occurred during command execution."
